@@ -56,7 +56,9 @@ Download the competition CSVs separately and adapt the Kaggle data and model pat
 
 The target-derived `FamilySurvival` feature has been removed because it used survival labels before the validation split. Family-size features that do not use the target remain available.
 
-Other preprocessing still occurs before the validation split. For a rigorous new comparison, fit preprocessing within each training fold and evaluate on untouched validation data. Saved outputs are records of an earlier experiment, not verified scores for the current code.
+The raw data is split before preprocessing. Group medians and fare-bin boundaries are learned from the training rows and reused for validation and test rows; target-independent category mappings stay consistent across all splits. Missing/unknown categories, extreme ages, and constant fare distributions have explicit handling.
+
+Optional grid search and stacking still receive preprocessed training features. Their inner cross-validation should place learned preprocessing inside each fold before its scores are used as independent evidence. The separate held-out validation rows do not determine preprocessing statistics. Saved outputs are records of an earlier experiment, not verified scores for the current code.
 
 Saved notebook metadata records Python 3.10.13. Dependencies are unpinned; record the actual environment and rerun the workflow before reporting results.
 
@@ -66,7 +68,7 @@ Saved notebook metadata records Python 3.10.13. Dependencies are unpinned; recor
 python -m unittest discover -s tests -v
 ```
 
-These checks verify target-independent features, family-indicator assignment, and baseline/tuned/checkpoint selection. They use pandas and do not train the full model stack or rerun SHAP.
+These checks verify held-out data isolation, consistent train/test features, unknown/missing values, constant-fare handling, target-independent family features, and baseline/tuned/checkpoint selection. They use NumPy, pandas, and scikit-learn; they do not train the full model stack or rerun SHAP. A read-only GitHub Actions workflow runs the same focused checks.
 
 ## License
 

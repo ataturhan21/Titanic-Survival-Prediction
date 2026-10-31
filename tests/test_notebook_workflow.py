@@ -1,11 +1,14 @@
 """Regression checks for preprocessing and checkpoint selection, without model training."""
 
+import ast
 import json
 from pathlib import Path
 import types
 import unittest
 
+import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
 NOTEBOOK = json.loads((Path(__file__).resolve().parents[1] / "titanic.ipynb").read_text())
@@ -38,9 +41,20 @@ def passengers():
 
 
 def preprocess(frame):
-    namespace = {"pd": pd, "train_df": frame.copy(), "test_df": passengers().drop(columns="Survived")}
+    namespace = {"pd": pd, "np": np}
+    nodes = [node for node in ast.parse(cell_containing("# Step 1: Handling missing values")).body
+             if isinstance(node, ast.FunctionDef) and node.name == "preprocess_passengers"]
+    exec(compile(ast.Module(body=nodes, type_ignores=[]), "<notebook>", "exec"), namespace)
+    return namespace["preprocess_passengers"](frame, passengers().drop(columns="Survived"))
+
+
+def prepare_splits(frame, test_frame=None):
+    namespace = {"pd": pd, "np": np, "train_test_split": train_test_split,
+                 "train_df": frame.copy(),
+                 "test_df": passengers().drop(columns="Survived") if test_frame is None else test_frame.copy()}
     exec(cell_containing("# Step 1: Handling missing values"), namespace)
-    return namespace["train_df"], namespace["test_df"]
+    exec(cell_containing("# The validation rows were separated"), namespace)
+    return namespace
 
 
 class WorkflowTests(unittest.TestCase):
@@ -57,6 +71,40 @@ class WorkflowTests(unittest.TestCase):
     def test_family_indicator_updates_the_original_frame(self):
         train, _ = preprocess(passengers())
         self.assertEqual(train["IsAlone"].tolist(), [1, 0, 0, 0, 0, 1, 0, 0])
+
+    def test_validation_values_cannot_change_training_statistics_or_bin_edges(self):
+        frame = pd.concat([passengers()] * 5, ignore_index=True)
+        first = prepare_splits(frame)
+        frame.loc[first["raw_validation"].index, ["Age", "Fare"]] = 1e6
+        changed = prepare_splits(frame)
+        pd.testing.assert_frame_equal(first["X_train"], changed["X_train"])
+        pd.testing.assert_frame_equal(first["test_df"], changed["test_df"])
+        self.assertFalse(set(first["X_train"].index) & set(first["X_val"].index))
+
+    def test_test_batch_distribution_does_not_change_a_passengers_features(self):
+        frame = pd.concat([passengers()] * 5, ignore_index=True)
+        test = passengers().drop(columns="Survived")
+        first = prepare_splits(frame, test)["test_df"].iloc[0]
+        test.loc[1:, ["Age", "Fare"]] = 1e6
+        changed = prepare_splits(frame, test)["test_df"].iloc[0]
+        pd.testing.assert_series_equal(first, changed)
+
+    def test_unknown_categories_missing_values_and_extreme_ages_are_handled(self):
+        frame = pd.concat([passengers()] * 5, ignore_index=True)
+        test = passengers().drop(columns="Survived")
+        test.loc[0, ["Age", "Fare", "Embarked"]] = np.nan
+        test.loc[1, ["Age", "Name", "Sex", "Cabin"]] = [120, "Unknown", "unknown", "Z9"]
+        result = prepare_splits(frame, test)["test_df"]
+        self.assertFalse(result.isna().any().any())
+        self.assertEqual(result.loc[1, "AgeGroup"], 4)
+        self.assertEqual(result.loc[1, "Sex"], -1)
+        self.assertEqual(result.loc[1, "Deck"], -1)
+
+    def test_constant_fares_do_not_break_quantile_binning(self):
+        frame = pd.concat([passengers()] * 5, ignore_index=True)
+        frame["Fare"] = 10.0
+        result = prepare_splits(frame)
+        self.assertEqual(result["X_train"]["FareBin"].unique().tolist(), [0])
 
     def test_fresh_run_uses_fitted_baseline_models(self):
         models = [object(), object(), object()]
