@@ -16,7 +16,7 @@ An exploratory machine-learning notebook for Kaggle's Titanic competition, cover
 
 1. Create a notebook and attach the [Titanic competition data](https://www.kaggle.com/competitions/titanic/data).
 2. Import `titanic.ipynb`.
-3. Confirm that the data-loading cells point to:
+3. Confirm that the competition files are at these paths (the notebook uses them whenever `/kaggle/input/titanic` exists):
 
    ```text
    /kaggle/input/titanic/train.csv
@@ -50,7 +50,7 @@ python -m pip install -r requirements.txt notebook
 jupyter notebook titanic.ipynb
 ```
 
-Download the competition CSVs separately and adapt the Kaggle data and model paths before execution. Datasets, checkpoints, and a generated `outputs/` directory are not included in this repository.
+Download `train.csv` and `test.csv` from the competition and put them in a `data/` folder next to the notebook. When the Kaggle folders do not exist, the notebook reads from `data/` and saves checkpoints to `models/`, so no path edits are needed. Datasets and checkpoints are not included in this repository; `data/`, `models/` and `submission.csv` are ignored by Git.
 
 ## Evaluation and reproducibility
 

@@ -142,14 +142,16 @@ class WorkflowTests(unittest.TestCase):
         exec(cell_containing("HO_TUNING = False"), namespace)
         return namespace, created
 
-    def test_fresh_local_run_uses_a_local_model_folder(self):
+    def test_fresh_local_run_uses_local_data_and_model_folders(self):
         namespace, created = self.settings(existing_dirs=set())
         self.assertEqual(namespace["MODEL_DIR"], "models")
+        self.assertEqual(namespace["DATA_DIR"], "data")
         self.assertEqual(created, ["models"])
 
-    def test_kaggle_run_keeps_the_kaggle_model_folder(self):
-        namespace, created = self.settings(existing_dirs={"/kaggle/working"})
+    def test_kaggle_run_keeps_the_kaggle_folders(self):
+        namespace, created = self.settings(existing_dirs={"/kaggle/working", "/kaggle/input/titanic"})
         self.assertEqual(namespace["MODEL_DIR"], "/kaggle/working/models")
+        self.assertEqual(namespace["DATA_DIR"], "/kaggle/input/titanic")
         self.assertEqual(created, ["/kaggle/working/models"])
 
 
