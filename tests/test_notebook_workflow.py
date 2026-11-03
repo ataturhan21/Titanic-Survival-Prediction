@@ -11,7 +11,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-NOTEBOOK = json.loads((Path(__file__).resolve().parents[1] / "titanic.ipynb").read_text())
+NOTEBOOK = json.loads((Path(__file__).resolve().parents[1] / "titanic.ipynb").read_text(encoding="utf-8"))
 
 
 def cell_containing(text):
