@@ -33,7 +33,7 @@ An exploratory machine-learning notebook for Kaggle's Titanic competition, cover
 5. Run the cells in order. Stacking will use the baseline models fitted earlier in the notebook.
 6. Download `submission.csv` from the notebook's working directory.
 
-Set `HO_TUNING=True` to run the grid searches and save tuned models under `/kaggle/working/models/`. Set `LOAD_MODEL=True` only when the expected logistic-regression, random-forest, and XGBoost checkpoint files already exist there.
+Set `HO_TUNING=True` to run the grid searches and save tuned models under `MODEL_DIR`: `/kaggle/working/models/` on Kaggle, or `models/` next to the notebook elsewhere. Set `LOAD_MODEL=True` only when the expected logistic-regression, random-forest, and XGBoost checkpoint files already exist there.
 
 ## Run locally
 
