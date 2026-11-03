@@ -2,6 +2,7 @@
 
 import ast
 import json
+import os
 from pathlib import Path
 import types
 import unittest
@@ -11,7 +12,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-NOTEBOOK = json.loads((Path(__file__).resolve().parents[1] / "titanic.ipynb").read_text())
+NOTEBOOK = json.loads((Path(__file__).resolve().parents[1] / "titanic.ipynb").read_text(encoding="utf-8"))
 
 
 def cell_containing(text):
@@ -123,12 +124,35 @@ class WorkflowTests(unittest.TestCase):
         self.assertIs(namespace["final_xgb"], tuned)
 
     def test_explicit_checkpoint_loading_remains_available(self):
-        namespace = dict(LOAD_MODEL=True, HO_TUNING=False,
+        namespace = dict(LOAD_MODEL=True, HO_TUNING=False, os=os, MODEL_DIR="models",
                          joblib=types.SimpleNamespace(load=lambda path: path))
         exec(cell_containing("if LOAD_MODEL:"), namespace)
         self.assertTrue(namespace["final_logreg"].endswith("logistic_regression_model.pkl"))
         self.assertTrue(namespace["final_rf"].endswith("random_forest_model.pkl"))
         self.assertTrue(namespace["final_xgb"].endswith("xgboost_model.pkl"))
+        self.assertEqual(os.path.dirname(namespace["final_rf"]), "models")
+
+    def settings(self, existing_dirs):
+        created = []
+        fake_os = types.SimpleNamespace(
+            path=types.SimpleNamespace(isdir=lambda path: path in existing_dirs, join=os.path.join),
+            makedirs=lambda path, exist_ok=False: created.append(path),
+        )
+        namespace = {"os": fake_os}
+        exec(cell_containing("HO_TUNING = False"), namespace)
+        return namespace, created
+
+    def test_fresh_local_run_uses_local_data_and_model_folders(self):
+        namespace, created = self.settings(existing_dirs=set())
+        self.assertEqual(namespace["MODEL_DIR"], "models")
+        self.assertEqual(namespace["DATA_DIR"], "data")
+        self.assertEqual(created, ["models"])
+
+    def test_kaggle_run_keeps_the_kaggle_folders(self):
+        namespace, created = self.settings(existing_dirs={"/kaggle/working", "/kaggle/input/titanic"})
+        self.assertEqual(namespace["MODEL_DIR"], "/kaggle/working/models")
+        self.assertEqual(namespace["DATA_DIR"], "/kaggle/input/titanic")
+        self.assertEqual(created, ["/kaggle/working/models"])
 
 
 if __name__ == "__main__":
