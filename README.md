@@ -2,7 +2,7 @@
 
 An exploratory machine-learning notebook for Kaggle's Titanic competition, covering feature engineering, model comparison, optional hyperparameter tuning, stacking, and prediction explanations.
 
-**[Open the notebook](titanic.ipynb)** · **[Kaggle version](https://www.kaggle.com/code/ataturhan/titanic-predicting-survivors)** · **[Dependencies](requirements.txt)** · **[MIT license](LICENSE)**
+**[Open the notebook](titanic.ipynb)** · **[Kaggle version](https://www.kaggle.com/code/ataturhan/titanic-predicting-survivors)** · **[Dependencies](requirements.txt)**
 
 ## What's implemented
 
@@ -84,6 +84,6 @@ python -m unittest discover -s tests -v
 
 These checks verify held-out data isolation, consistent train/test features, unknown/missing values, constant-fare handling, target-independent family features, baseline/tuned/checkpoint selection, and the Kaggle-or-local data and model folders. They use NumPy, pandas, and scikit-learn; they do not train the full model stack or rerun SHAP. A read-only GitHub Actions workflow runs the same focused checks on Ubuntu and Windows.
 
-## License
+## Copyright
 
-[MIT](LICENSE).
+© Ata Turhan. All rights reserved. This repository has no open-source license: its code may not be copied, modified or redistributed.
